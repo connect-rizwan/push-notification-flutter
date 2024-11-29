@@ -1,9 +1,10 @@
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_firebase_notifications/message_screen.dart';
+import 'package:flutter_firebase_notifications/main.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 class NotificationServices {
@@ -27,11 +28,11 @@ class NotificationServices {
     await _flutterLocalNotificationsPlugin.initialize(initializationSetting,
         onDidReceiveNotificationResponse: (payload) {
       // handle interaction when app is active for android
-      handleMessage(context, message);
+      handleMessage(message);
     });
   }
 
-  void firebaseInit(BuildContext context) {
+  void firebaseInit() {
     FirebaseMessaging.onMessage.listen((message) {
       RemoteNotification? notification = message.notification;
       AndroidNotification? android = message.notification!.android;
@@ -48,7 +49,7 @@ class NotificationServices {
       }
 
       if (Platform.isAndroid) {
-        initLocalNotifications(context, message);
+        initLocalNotifications(navigatorKey.currentState!.context, message);
         showNotification(message);
       }
     });
@@ -67,17 +68,20 @@ class NotificationServices {
 
     if (settings.authorizationStatus == AuthorizationStatus.authorized) {
       if (kDebugMode) {
-        print('user granted permission');
+        log('user granted permission', name: 'Notification Permision Status');
       }
     } else if (settings.authorizationStatus ==
         AuthorizationStatus.provisional) {
       if (kDebugMode) {
-        print('user granted provisional permission');
+        log('user granted provisional permission',
+            name: 'Notification Permision Status');
       }
     } else {
       //appsetting.AppSettings.openNotificationSettings();
       if (kDebugMode) {
-        print('user denied permission');
+        log(
+          'user denied permission',
+        );
       }
     }
   }
@@ -85,17 +89,18 @@ class NotificationServices {
   // function to show visible notification when app is active
   Future<void> showNotification(RemoteMessage message) async {
     AndroidNotificationChannel channel = AndroidNotificationChannel(
-        message.notification!.android!.channelId.toString(),
-        message.notification!.android!.channelId.toString(),
-        importance: Importance.max,
-        showBadge: true,
-        playSound: true,
-        sound: const RawResourceAndroidNotificationSound('jetsons_doorbell'));
+      message.notification!.android!.channelId.toString(),
+      message.notification!.android!.channelId.toString(),
+      importance: Importance.max,
+      showBadge: true,
+      playSound: true,
+      // sound: const RawResourceAndroidNotificationSound('jetsons_doorbell'),
+    );
 
     AndroidNotificationDetails androidNotificationDetails =
         AndroidNotificationDetails(
             channel.id.toString(), channel.name.toString(),
-            channelDescription: 'your channel description',
+            channelDescription: 'channel_description',
             importance: Importance.high,
             priority: Priority.high,
             playSound: true,
@@ -132,36 +137,40 @@ class NotificationServices {
     messaging.onTokenRefresh.listen((event) {
       event.toString();
       if (kDebugMode) {
-        print('refresh');
+        log('refresh');
       }
     });
   }
 
   //handle tap on notification when app is in background or terminated
-  Future<void> setupInteractMessage(BuildContext context) async {
+  Future<void> setupInteractMessage() async {
     // when app is terminated
     RemoteMessage? initialMessage =
         await FirebaseMessaging.instance.getInitialMessage();
 
     if (initialMessage != null) {
-      handleMessage(context, initialMessage);
+      handleMessage(initialMessage);
     }
 
     //when app ins background
     FirebaseMessaging.onMessageOpenedApp.listen((event) {
-      handleMessage(context, event);
+      handleMessage(event);
     });
   }
 
-  void handleMessage(BuildContext context, RemoteMessage message) {
-    if (message.data['type'] == 'message') {
-      Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (context) => MessageScreen(
-                    id: message.data['id'],
-                  )));
-    }
+  void handleMessage(RemoteMessage message) {
+    log(message.data.toString());
+
+    // JobsController().getJobDetails(message.data['notifiable_id'].toString(),
+    //     navigatorKey.currentState!.context);
+    // if (message.data['type'] == 'message') {
+    //   Navigator.push(
+    //       context,
+    //       MaterialPageRoute(
+    //           builder: (context) => MessageScreen(
+    //                 id: message.data['id'],
+    //               )));
+    // }
   }
 
   Future forgroundMessage() async {

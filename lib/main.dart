@@ -1,22 +1,40 @@
+import 'dart:developer';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_firebase_notifications/home_screen.dart';
+import 'package:flutter_firebase_notifications/notification_services.dart';
 
-
-@pragma('vm:entry-point')
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message)async {
-  await Firebase.initializeApp();
+GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp(
+      // options: DefaultFirebaseOptions.currentPlatform,
+      );
 }
 
-
-void main()async {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  // HttpOverrides.global = MyHttpOverrides();
+  await Firebase.initializeApp(
+      // options: DefaultFirebaseOptions.currentPlatform,
+      );
+
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  NotificationServices().setupInteractMessage();
+  NotificationServices().requestNotificationPermission();
+  NotificationServices().forgroundMessage();
+  NotificationServices().firebaseInit();
+  NotificationServices().getDeviceToken().then((value) {
+    if (kDebugMode) {
+      log(value, name: 'Device token');
+    }
+  });
+
+  // await loadSvg();
   runApp(const MyApp());
 }
-
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -25,14 +43,12 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: 'Flutter Demo',
       theme: ThemeData(
-
         primarySwatch: Colors.blue,
       ),
       home: const HomeScreen(),
     );
   }
 }
-
-
